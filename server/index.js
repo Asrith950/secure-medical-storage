@@ -45,7 +45,7 @@ app.use(limiter);
 // ✅ CORS for frontend + localhost
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://secure-medical-storage-frontend.onrender.com"
+  "https://secure-medical-storage-1.onrender.com"
 ];
 
 app.use(cors({
