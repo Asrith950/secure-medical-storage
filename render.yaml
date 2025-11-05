@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: secure-medical-storage-web
+    env: node
+    plan: free
+    branch: upload-local-project
+    region: oregon
+    buildCommand: >-
+      npm ci && npm run install-client && npm run install-server && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: MONGODB_URI
+      - key: JWT_SECRET
+      - key: OPENAI_API_KEY
+      - key: NODE_ENV
+      - key: PORT
