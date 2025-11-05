@@ -12,12 +12,20 @@ export const useAuth = () => {
   return context;
 };
 
+// ✅ Backend Base URL - auto switches between local & Render
+const API_BASE_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'https://secure-medical-storage-backend.onrender.com'
+    : 'http://localhost:5000';
+
+axios.defaults.baseURL = API_BASE_URL;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
-  // Set default axios header
+  // ✅ Set Authorization header when token changes
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -26,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Check if user is logged in on app load
+  // ✅ Auto-auth check on page refresh
   useEffect(() => {
     const checkAuth = async () => {
       if (token) {
@@ -35,7 +43,6 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data.data);
         } catch (error) {
           console.error('Auth check failed:', error);
-          // Remove invalid token
           localStorage.removeItem('token');
           setToken(null);
           delete axios.defaults.headers.common['Authorization'];
@@ -55,11 +62,10 @@ export const AuthProvider = ({ children }) => {
       });
 
       const { token: newToken, data: userData } = response.data;
-      
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
-      
+
       toast.success('Login successful!');
       return { success: true };
     } catch (error) {
@@ -78,11 +84,10 @@ export const AuthProvider = ({ children }) => {
       });
 
       const { token: newToken, data: userData } = response.data;
-      
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
-      
+
       toast.success('Registration successful!');
       return { success: true };
     } catch (error) {
