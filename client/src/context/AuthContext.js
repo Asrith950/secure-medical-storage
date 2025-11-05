@@ -1,18 +1,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
-// ✅ Backend Base URL - auto switches between local & Render
+// ✅ Detect backend automatically
 const API_BASE_URL =
   process.env.NODE_ENV === 'production'
     ? 'https://secure-medical-storage-backend.onrender.com'
@@ -21,11 +16,13 @@ const API_BASE_URL =
 axios.defaults.baseURL = API_BASE_URL;
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const navigate = useNavigate();
 
-  // ✅ Set Authorization header when token changes
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ✅ Set axios token when login
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -34,19 +31,17 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // ✅ Auto-auth check on page refresh
+  // ✅ Auto-check logged-in state on refresh
   useEffect(() => {
     const checkAuth = async () => {
-      if (token) {
-        try {
-          const response = await axios.get('/api/auth/me');
-          setUser(response.data.data);
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          setToken(null);
-          delete axios.defaults.headers.common['Authorization'];
-        }
+      if (!token) return setIsLoading(false);
+
+      try {
+        const res = await axios.get('/api/auth/me');
+        setUser(res.data.data);
+      } catch (error) {
+        localStorage.removeItem('token');
+        setToken(null);
       }
       setIsLoading(false);
     };
@@ -54,46 +49,33 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [token]);
 
+  // ✅ LOGIN ✓ Redirects to Dashboard
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', {
-        email,
-        password
-      });
+      const res = await axios.post('/api/auth/login', { email, password });
+      const { token: newToken, data } = res.data;
 
-      const { token: newToken, data: userData } = response.data;
       localStorage.setItem('token', newToken);
       setToken(newToken);
-      setUser(userData);
+      setUser(data);
 
-      toast.success('Login successful!');
-      return { success: true };
+      toast.success('Logged in successfully ✅');
+      navigate('/dashboard'); // ✅ redirect works!
+
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
-      toast.error(message);
-      return { success: false, message };
+      toast.error(error.response?.data?.message || 'Login failed ❌');
     }
   };
 
+  // ✅ REGISTER ✓ Redirects to Login Page
   const register = async (name, email, password) => {
     try {
-      const response = await axios.post('/api/auth/register', {
-        name,
-        email,
-        password
-      });
+      await axios.post('/api/auth/register', { name, email, password });
+      toast.success('Registered ✅ Now login!');
+      navigate('/login'); // ✅ correct redirect
 
-      const { token: newToken, data: userData } = response.data;
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-      setUser(userData);
-
-      toast.success('Registration successful!');
-      return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Registration failed';
-      toast.error(message);
-      return { success: false, message };
+      toast.error(error.response?.data?.message || 'Registration failed ❌');
     }
   };
 
@@ -101,26 +83,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
-    toast.success('Logged out successfully');
-  };
-
-  const updateUser = (userData) => {
-    setUser(prevUser => ({ ...prevUser, ...userData }));
-  };
-
-  const value = {
-    user,
-    token,
-    isLoading,
-    login,
-    register,
-    logout,
-    updateUser
+    toast.info('Logged out');
+    navigate('/login'); // ✅ redirect after logout
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
