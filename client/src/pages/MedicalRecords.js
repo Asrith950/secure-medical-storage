@@ -191,7 +191,18 @@ const MedicalRecords = () => {
   };
 
   const handleDownload = (record) => {
-    const downloadUrl = `https://secure-medical-storage-backend.onrender.com${record.fileUrl}`;
+    // Prefer a configured API base URL (set REACT_APP_API_URL in production),
+    // otherwise fall back to the current origin so the client works when
+    // the backend serves the static build on the same host.
+    const apiBase = (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.trim())
+      ? process.env.REACT_APP_API_URL.trim()
+      : window.location.origin;
+
+    // Ensure we don't accidentally create double slashes
+    const base = apiBase.replace(/\/$/, '');
+    const filePath = record.fileUrl.startsWith('/') ? record.fileUrl : `/${record.fileUrl}`;
+    const downloadUrl = `${base}${filePath}`;
+
     window.open(downloadUrl, '_blank');
     toast.success('Downloading file...');
   };
