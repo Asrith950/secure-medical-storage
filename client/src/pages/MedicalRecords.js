@@ -191,7 +191,7 @@ const MedicalRecords = () => {
   };
 
   const handleDownload = (record) => {
-    const downloadUrl = `http://localhost:5000${record.fileUrl}`;
+    const downloadUrl = `https://secure-medical-storage-backend.onrender.com${record.fileUrl}`;
     window.open(downloadUrl, '_blank');
     toast.success('Downloading file...');
   };
