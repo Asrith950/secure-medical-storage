@@ -50,8 +50,11 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: allowedOrigins,
-  credentials: true
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"], // allow token
+  exposedHeaders: ["Authorization"]
 }));
+
 
 // Middleware
 app.use(express.json());
@@ -62,7 +65,7 @@ app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ API Routes
-app.use('/api/auth', demoMode, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/medical-records', medicalRecordRoutes);
 app.use('/api/reminders', reminderRoutes);
